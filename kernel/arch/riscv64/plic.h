@@ -1,22 +1,36 @@
 #ifndef PLIC_H
 #define PLIC_H
 
-#define UART0_IRQ 10
+#include <stdint.h>
 
-#define PLIC 0x0c000000L
-#define PLIC_PRIORITY (PLIC + 0x0)
-#define PLIC_PENDING (PLIC + 0x1000)
-#define PLIC_MENABLE(hart) (PLIC + 0x2000 + (hart)*0x100)
-#define PLIC_SENABLE(hart) (PLIC + 0x2080 + (hart)*0x100)
-#define PLIC_MPRIORITY(hart) (PLIC + 0x200000 + (hart)*0x2000)
-#define PLIC_SPRIORITY(hart) (PLIC + 0x201000 + (hart)*0x2000)
-#define PLIC_MCLAIM(hart) (PLIC + 0x200004 + (hart)*0x2000)
-#define PLIC_SCLAIM(hart) (PLIC + 0x201004 + (hart)*0x2000)
+#define PLIC_BASE           0x0c000000UL
+#define PLIC_PRIORITY_BASE  0x4
+#define PLIC_PENDING_BASE   0x1000
+#define PLIC_ENABLE_BASE    0x2000
+#define PLIC_ENABLE_STRIDE  0x80
+#define PLIC_CONTEXT_BASE   0x200000
+#define PLIC_CONTEXT_STRIDE 0x1000
 
-void plic_init(void);
-void plic_init_hart(int hart_id);
+#define PLIC_MODE_MACHINE    0x0
+#define PLIC_MODE_SUPERVISOR 0x1
 
-int plic_claim(int hart_id);
-void plic_complete(int irq,int hart_id);
+#define PLIC_PRIORITY(interrupt) \
+    (PLIC_BASE + PLIC_PRIORITY_BASE * interrupt)
+
+#define PLIC_THRESHOLD(hart, mode) \
+    (PLIC_BASE + PLIC_CONTEXT_BASE + PLIC_CONTEXT_STRIDE * (2 * hart + mode))
+
+#define PLIC_CLAIM(hart, mode) \
+    (PLIC_THRESHOLD(hart, mode) + 4)
+
+#define PLIC_ENABLE(hart, mode) \
+    (PLIC_BASE + PLIC_ENABLE_BASE + PLIC_ENABLE_STRIDE * (2 * hart + mode))
+
+void plic_set_priority(int interrupt_id, char priority);
+void plic_set_threshold(int hart, char priority);
+void plic_enable(int hart, int interrupt_id);
+void plic_disable(int hart, int interrupt_id);
+uint32_t plic_claim(int hart);
+void plic_complete(int hart, int id);
 
 #endif

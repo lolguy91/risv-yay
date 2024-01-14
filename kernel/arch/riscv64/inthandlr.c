@@ -1,6 +1,6 @@
 #include "plic.h"
 #include "uart.h"
-
+#include "printf.h"
 void handler(){
     uint64_t coreid;
     uint64_t sepc;
@@ -13,12 +13,11 @@ void handler(){
     asm volatile("csrr %0, scause" : "=r" (scause));
 
 
+    printf("0x%16llx\n",scause);
+
     if((scause & 0x8000000000000000L) &&
         (scause & 0xff) == 9){
         uint64_t irq = plic_claim(coreid);
-        if(irq == UART0_IRQ){
-            uart_interrupt();
-        }
         plic_complete(irq,coreid);
 
     }else if(scause == 0x8000000000000001L){

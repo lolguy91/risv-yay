@@ -1,24 +1,31 @@
 #include "plic.h"
-#include <stdint.h>
-
-void plic_init(void)
+void plic_set_priority(int interrupt_id, char priority)
 {
-  *(uint32_t*)(PLIC + UART0_IRQ*4) = 1;
+    uint32_t *base = (uint32_t *)PLIC_PRIORITY(interrupt_id);
+    *base = priority & 0x7;
 }
-
-void plic_init_hart(int hart_id)
+void plic_set_threshold(int hart, char priority)
 {
-  *(uint32_t*)PLIC_SENABLE(hart_id) = (1 << UART0_IRQ);
-  *(uint32_t*)PLIC_SPRIORITY(hart_id) = 0;
+    uint32_t *base = (uint32_t *)PLIC_THRESHOLD(hart, PLIC_MODE_SUPERVISOR);
+    *base = priority & 0x7;
 }
-
-int plic_claim(int hart_id)
+void plic_enable(int hart, int interrupt_id)
 {
-  int irq = *(uint32_t*)PLIC_SCLAIM(hart_id);
-  return irq;
+    uint32_t *base = (uint32_t *)PLIC_ENABLE(hart, PLIC_MODE_SUPERVISOR);
+    base[interrupt_id / 32] |= 1UL << (interrupt_id % 32);
 }
-
-void plic_complete(int irq,int hart_id)
+void plic_disable(int hart, int interrupt_id)
 {
-  *(uint32_t*)PLIC_SCLAIM(hart_id) = irq;
+    uint32_t *base = (uint32_t *)PLIC_ENABLE(hart, PLIC_MODE_SUPERVISOR);
+    base[interrupt_id / 32] &= ~(1UL << (interrupt_id % 32));
+}
+uint32_t plic_claim(int hart)
+{
+    uint32_t *base = (uint32_t *)PLIC_CLAIM(hart, PLIC_MODE_SUPERVISOR);
+    return *base;
+}
+void plic_complete(int hart, int id)
+{
+    uint32_t *base = (uint32_t *)PLIC_CLAIM(hart, PLIC_MODE_SUPERVISOR);
+    *base = id;
 }
