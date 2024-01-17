@@ -1,3 +1,5 @@
+#define _FILE_CONTAINS_RISCV_IMPL
+
 #include <stdint.h>
 #include "plic.h"
 #include "riscv.h"
@@ -24,13 +26,13 @@ void start(){
     uint64_t mstatus;
     uint64_t sstatus;
     asm volatile("csrr %0, mstatus" : "=r" (mstatus) );
-    asm volatile("csrr %0, sstatus" : "=r" (sstatus) );
+    r_sstatus(sstatus);
     mstatus &= ~MSTATUS_MPP_MASK;
     mstatus |= MSTATUS_MPP_S;
     mstatus |= MSTATUS_MIE;
     sstatus |= SSTATUS_SIE;
     asm volatile("csrw mstatus, %0" : : "r" (mstatus));
-    asm volatile("csrw sstatus, %0" : : "r" (sstatus));
+    w_sstatus(sstatus);
 
     //disable paging
     asm volatile("csrw satp, %0" : : "r" (0));
@@ -68,13 +70,16 @@ void start(){
     //get into supervisor mode
     asm volatile("mret");
 }
+
 void kalloc_init();
 void kpagemap_init();
+
+volatile static int started = 0;
 
 void _start_supervirsor()
 {
     uint64_t coreid;
-    asm volatile("mv %0, tp" : "=r" (coreid) );
+    r_tp(coreid);
 
     if (coreid > NCPU) {
         // maximum cores exceeded
@@ -83,10 +88,16 @@ void _start_supervirsor()
         }
     }
     if (coreid == 0) {
-        printf("Initializing core 0!\r\n");
+        printf("Da kernel is starting!\r\n");
+        init_uart();
         kalloc_init();
         //kpagemap_init();
-        init_uart();
+        started = 1;
+    }else{
+        while (started == 0) {
+            asm volatile("wfi");
+        }
+        printf("Core %d is starting!\r\n", coreid);
     }
     main(coreid);
 }

@@ -1,4 +1,18 @@
+#ifndef RISCV_H
+#define RISCV_H
+
 #include <stdint.h>
+#include <config.h>
+
+struct cpu {
+    uint64_t nintr;
+};
+
+#ifdef _FILE_CONTAINS_RISCV_IMPL
+    struct cpu cpus[NCPU];
+#else
+    extern struct cpu cpus[NCPU];
+#endif
 
 #define MSTATUS_MPP_MASK (3L << 11) // previous mode.
 #define MSTATUS_MPP_M (3L << 11)
@@ -58,3 +72,49 @@ typedef uint64_t *pagetable_t; // 512 PTEs
 
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 128*1024*1024)
+
+#define r_sstatus(x) \
+    do { \
+        asm volatile ("csrr %0, sstatus" : "=r" (x) ); \
+    } while (0)
+
+#define w_sstatus(x) \
+    do { \
+        asm volatile ("csrw sstatus, %0" : : "r" (x) ); \
+    } while (0)
+
+#define r_tp(x) \
+    do { \
+        asm volatile ("mv %0, tp" : "=r" (x) ); \
+    } while (0)
+
+#define intr_off() \
+    do { \
+        uint64 x; \
+        r_sstatus(x); \
+        x &= ~SSTATUS_SIE; \
+        w_sstatus(x); \
+    } while (0)
+#define intr_on() \
+    do { \
+        uint64 x; \
+        r_sstatus(x); \
+        x |= SSTATUS_SIE; \
+        w_sstatus(x); \
+    } while (0)
+#define intr_off_matched() \
+    do { \
+        uint64 hartid; \
+        r_tp(hartid); \
+        cpus[hartid].nintr += 1; \
+        intr_off(); \
+    } while (0)
+#define intr_on_matched() \
+    do { \
+        uint64 hartid; \
+        r_tp(hartid); \
+        cpus[hartid].nintr -= 1; \
+        if(cpus[hartid].nintr == 0) \
+            intr_on(); \
+    } while (0)
+#endif

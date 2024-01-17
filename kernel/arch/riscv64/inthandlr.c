@@ -1,5 +1,6 @@
 #include "plic.h"
 #include "uart.h"
+#include "riscv.h"
 #include "printf.h"
 void handler(){
     
@@ -8,9 +9,9 @@ void handler(){
     uint64_t sstatus;
     uint64_t scause;
 
-    asm volatile("mv %0, tp" : "=r" (coreid) );
+    r_tp(coreid);
     asm volatile("csrr %0, sepc" : "=r" (sepc));
-    asm volatile("csrr %0, sstatus" : "=r" (sstatus));
+    r_sstatus(sstatus);
     asm volatile("csrr %0, scause" : "=r" (scause));
 
     if((scause & 0x8000000000000000L) &&
@@ -27,5 +28,5 @@ void handler(){
     }
 
     asm volatile("csrw sepc, %0" : : "r" (sepc));
-    asm volatile("csrw sstatus, %0" : : "r" (sstatus));
+    w_sstatus(sstatus);
 }
