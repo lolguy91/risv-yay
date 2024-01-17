@@ -76,45 +76,43 @@ typedef uint64_t *pagetable_t; // 512 PTEs
 #define r_sstatus(x) \
     do { \
         asm volatile ("csrr %0, sstatus" : "=r" (x) ); \
-    } while (0)
+    } while (0);
 
 #define w_sstatus(x) \
     do { \
         asm volatile ("csrw sstatus, %0" : : "r" (x) ); \
-    } while (0)
+    } while (0);
 
 #define r_tp(x) \
     do { \
         asm volatile ("mv %0, tp" : "=r" (x) ); \
-    } while (0)
+    } while (0);
 
-#define intr_off() \
-    do { \
-        uint64 x; \
-        r_sstatus(x); \
-        x &= ~SSTATUS_SIE; \
-        w_sstatus(x); \
-    } while (0)
-#define intr_on() \
-    do { \
-        uint64 x; \
-        r_sstatus(x); \
-        x |= SSTATUS_SIE; \
-        w_sstatus(x); \
-    } while (0)
-#define intr_off_matched() \
-    do { \
-        uint64 hartid; \
-        r_tp(hartid); \
-        cpus[hartid].nintr += 1; \
-        intr_off(); \
-    } while (0)
-#define intr_on_matched() \
-    do { \
-        uint64 hartid; \
-        r_tp(hartid); \
-        cpus[hartid].nintr -= 1; \
-        if(cpus[hartid].nintr == 0) \
-            intr_on(); \
-    } while (0)
+static inline void intr_off() {
+    uint64_t x; \
+    r_sstatus(x); \
+    x &= ~SSTATUS_SIE; \
+    w_sstatus(x); 
+    
+}
+
+static inline void intr_on() {
+    uint64_t x; \
+    r_sstatus(x); \
+    x |= SSTATUS_SIE; \
+    w_sstatus(x); 
+}
+static inline void intr_off_matched() {
+    uint64_t hartid; \
+    r_tp(hartid); \
+    cpus[hartid].nintr += 1; \
+    intr_off();
+}
+static inline void intr_on_matched() {
+    uint64_t hartid; \
+    r_tp(hartid); \
+    cpus[hartid].nintr -= 1; \
+    if(cpus[hartid].nintr == 0) \
+        intr_on(); 
+}
 #endif

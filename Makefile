@@ -1,5 +1,4 @@
 K=kernel
-U=user
 
 CFILES := $(shell find -L . -type f -name '*.c')
 ASFILES := $(shell find -L . -type f -name '*.S')
@@ -35,7 +34,7 @@ CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib
-CFLAGS += -I. -I$K -I$K/arch/riscv64 -I$K/arch/shared_bindings -I$K/vendor
+CFLAGS += -I. -I$K -I$K/arch/riscv64 -I$K/arch/shared_bindings -I$K/vendor -I$K/util
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
 # Disable PIE when possible (for Ubuntu 16.10 toolchain)

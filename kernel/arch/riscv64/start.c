@@ -83,9 +83,8 @@ void _start_supervirsor()
 
     if (coreid > NCPU) {
         // maximum cores exceeded
-        while (1) {
-            asm volatile("wfi");
-        }
+        printf("Maximum cores exceeded!\r\n");
+        while (1);
     }
     if (coreid == 0) {
         printf("Da kernel is starting!\r\n");
@@ -94,9 +93,7 @@ void _start_supervirsor()
         //kpagemap_init();
         started = 1;
     }else{
-        while (started == 0) {
-            asm volatile("wfi");
-        }
+        while (started == 0);
         printf("Core %d is starting!\r\n", coreid);
     }
     main(coreid);
