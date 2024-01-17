@@ -2,6 +2,13 @@
 #include "uart.h"
 #include "riscv.h"
 #include "printf.h"
+
+extern void schedule();
+
+void clockinterrupt(){
+    schedule();
+}
+
 void handler(){
     
     uint64_t coreid;
@@ -20,7 +27,7 @@ void handler(){
         //plic_complete(irq,coreid);
 
     }else if(scause == 0x8000000000000001L){
-        //putchar('\n');
+        clockinterrupt();
         uint64_t sip;
         asm volatile("csrr %0, sip" : "=r" (sip) );
         sip &= ~(1 << 2);
