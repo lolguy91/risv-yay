@@ -10,36 +10,22 @@ struct cpu {
     uint64_t nintr;
 };
 struct context {
-    reg_t ra;
-    reg_t sp;
-    reg_t gp;
-    reg_t t0;
-    reg_t t1;
-    reg_t t2;
-    reg_t s0;
-    reg_t s1;
-    reg_t a0;
-    reg_t a1;
-    reg_t a2;
-    reg_t a3;
-    reg_t a44;
-    reg_t a52;
-    reg_t a60;
-    reg_t a78;
-    reg_t s26;
-    reg_t s34;
-    reg_t s42;
-    reg_t s50;
-    reg_t s68;
-    reg_t s76;
-    reg_t s84;
-    reg_t s92;
-    reg_t s100;
-    reg_t s118;
-    reg_t t36;
-    reg_t t44;
-    reg_t t52;
-    reg_t t60;
+  uint64 ra;
+  uint64 sp;
+
+  // callee-saved
+  uint64 s0;
+  uint64 s1;
+  uint64 s2;
+  uint64 s3;
+  uint64 s4;
+  uint64 s5;
+  uint64 s6;
+  uint64 s7;
+  uint64 s8;
+  uint64 s9;
+  uint64 s10;
+  uint64 s11;
 };
 
 #ifdef _FILE_CONTAINS_RISCV_IMPL
