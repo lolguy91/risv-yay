@@ -4,9 +4,10 @@
 #include "uart.h"
 #include "clint.h"
 #include "printf.h"
+#include "config.h"
 
-__attribute__ ((aligned (16))) char stack0[1024*2];
-uint64_t timer_scratch[4][5];
+__attribute__ ((aligned (16))) char stack0[4096*NCPU];
+uint64_t timer_scratch[NCPU][5];
 
 void main(uint64_t coreid);
 void _start_supervirsor();
@@ -19,33 +20,37 @@ void start(){
     asm volatile("csrr %0, mhartid" : "=r" (coreid) );
     asm volatile("mv tp, %0" : : "r" (coreid));
 
+    //initialize MSTATUS and SSTATUS
     uint64_t mstatus;
+    uint64_t sstatus;
     asm volatile("csrr %0, mstatus" : "=r" (mstatus) );
+    asm volatile("csrr %0, sstatus" : "=r" (sstatus) );
     mstatus &= ~MSTATUS_MPP_MASK;
     mstatus |= MSTATUS_MPP_S;
     mstatus |= MSTATUS_MIE;
+    sstatus |= SSTATUS_SIE;
     asm volatile("csrw mstatus, %0" : : "r" (mstatus));
+    asm volatile("csrw sstatus, %0" : : "r" (sstatus));
 
-    asm volatile("csrw mepc, %0" : : "r" ((uint64_t)_start_supervirsor));
+    //disable paging
     asm volatile("csrw satp, %0" : : "r" (0));
 
+    //delegate all interrupts to supervisor
     asm volatile("csrw medeleg, %0" : : "r" (0xffff));
     asm volatile("csrw mideleg, %0" : : "r" (0xffff));
 
+    //set pmp
+    asm volatile("csrw pmpcfg0, %0" : : "r" (0));
     asm volatile("csrw pmpaddr0, %0" : : "r" (0x3fffffffffffffull));
     asm volatile("csrw pmpcfg0, %0" : : "r" (0xf));
     
-    uint64_t sstatus;
-    asm volatile("csrr %0, sstatus" : "=r" (sstatus) );
-    sstatus |= SSTATUS_SIE;
-    asm volatile("csrw sstatus, %0" : : "r" (sstatus));
-    
+    //enable interrupts
     uint64_t sie;
     asm volatile("csrr %0, sie" : "=r" (sie) );
     asm volatile("csrw sie, %0" : : "r" (sie | SIE_SEIE | SIE_STIE | SIE_SSIE));
-
     asm volatile("csrw stvec, %0" : : "r" ((uint64_t)kernelvec));//register interrupt handler
 
+    //set up timer
     int interval = 1000000;
     *(uint64_t*)CLINT_MTIMECMP(coreid) = *(uint64_t*)CLINT_MTIME + interval;
     uint64_t *scratch = &timer_scratch[coreid][0];
@@ -56,17 +61,31 @@ void start(){
     uint64_t mie;
     asm volatile("csrr %0, mie" : "=r" (mie) );
     asm volatile("csrw mie, %0" : : "r" (mie | MIE_MTIE));
-    *(uint32_t*)CLINT = 1;
+
+    //set previous code address to _start_supervirsor
+    asm volatile("csrw mepc, %0" : : "r" ((uint64_t)_start_supervirsor));
     
+    //get into supervisor mode
     asm volatile("mret");
 }
+void kalloc_init();
+void kpagemap_init();
 
 void _start_supervirsor()
 {
     uint64_t coreid;
     asm volatile("mv %0, tp" : "=r" (coreid) );
 
+    if (coreid > NCPU) {
+        // maximum cores exceeded
+        while (1) {
+            asm volatile("wfi");
+        }
+    }
     if (coreid == 0) {
+        printf("Initializing core 0!\r\n");
+        kalloc_init();
+        //kpagemap_init();
         init_uart();
     }
     main(coreid);

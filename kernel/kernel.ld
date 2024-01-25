@@ -1,26 +1,30 @@
-ENTRY(_entry);
- 
-. = 0x80000000;
- 
-SECTIONS {
-	/* Include entry point at start of binary */
-	.text : ALIGN(4K) {
-		*(.init);
-		*(.text);
-	}
-	.bss : ALIGN(4K) {
-		PROVIDE(bss_start = .);
-		*(.bss);
-		. += 4096;
-		PROVIDE(stack_top = .);
-		. += 4096;
-		PROVIDE(global_pointer = .);
-		PROVIDE(bss_end = .);
-	}
-	.rodata : ALIGN(4K) {
-		*(.rodata);
-	}
-	.data : ALIGN(4K) {
-		*(.data);
-	}
+OUTPUT_ARCH( "riscv" )
+ENTRY( _entry )
+
+SECTIONS
+{
+  /*
+   * ensure that entry.S / _entry is at 0x80000000,
+   * where qemu's -kernel jumps.
+   */
+  . = 0x80000000;
+  .text : {
+    *(.init .init.*)
+    *(.text .text.*)
+     PROVIDE(etext = .);
+  }
+
+  .rodata : {
+    *(.rodata .rodata.*)
+  }
+
+  .data : {
+    *(.data .data.*)
+  }
+
+  .bss : {
+    *(.bss .bss.*)
+  }
+
+  PROVIDE(end = .);
 }

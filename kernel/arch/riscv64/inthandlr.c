@@ -2,26 +2,24 @@
 #include "uart.h"
 #include "printf.h"
 void handler(){
+    
     uint64_t coreid;
     uint64_t sepc;
     uint64_t sstatus;
     uint64_t scause;
 
-    asm volatile("csrr %0, mhartid" : "=r" (coreid) );
+    asm volatile("mv %0, tp" : "=r" (coreid) );
     asm volatile("csrr %0, sepc" : "=r" (sepc));
     asm volatile("csrr %0, sstatus" : "=r" (sstatus));
     asm volatile("csrr %0, scause" : "=r" (scause));
 
-
-    printf("0x%16llx\n",scause);
-
     if((scause & 0x8000000000000000L) &&
         (scause & 0xff) == 9){
-        uint64_t irq = plic_claim(coreid);
-        plic_complete(irq,coreid);
+        //uint64_t irq = plic_claim(coreid);
+        //plic_complete(irq,coreid);
 
     }else if(scause == 0x8000000000000001L){
-        putchar('\n');
+        //putchar('\n');
         uint64_t sip;
         asm volatile("csrr %0, sip" : "=r" (sip) );
         sip &= ~(1 << 2);

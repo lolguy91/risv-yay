@@ -67,9 +67,12 @@ $K/kernel: $(OBJS) $K/kernel.ld
 
 -include kernel/*.d user/*.d
 
+DFILES := $(shell find -L . -type f -name '*.d')
+OFILES := $(shell find -L . -type f -name '*.o')
+
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
-	*/*.o */*.d */*.asm */*.sym \
+	$(OFILES) $(DFILES) */*.asm */*.sym \
 
 # try to generate a unique GDB port
 GDBPORT = $(shell expr `id -u` % 5000 + 25000)

@@ -1,4 +1,3 @@
-#include "syscon.h"
 
 unsigned int *syscon = (unsigned int *)0x100000; 
 
